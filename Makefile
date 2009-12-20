@@ -12,8 +12,7 @@ LDFLAGS += -lboost_thread-xgcc40-mt-s-1_39
 LD = g++
 CC = g++
 
-BINS = $(addprefix bin/,logic_read logic_to_event logic_trigger)
-#BINS = logic_read logic_to_event logic_trigger
+BINS = $(addprefix bin/,logic_read logic_to_event logic_trigger pattern_generator)
 
 all: $(BINS)
 
@@ -26,15 +25,17 @@ bin/logic_read: logic_read.o common.o
 logic_trigger.o: logic_trigger.cpp common.h
 bin/logic_trigger: logic_trigger.o common.o
 
+bin/pattern_generator: pattern_generator.o common.o
+
 common.o: common.cpp common.h
 
 bin/%:%.o
 	@mkdir -p bin
-	@echo LD $<
+	@echo LD $@
 	@$(LD) $(LDFLAGS) $^ -o $@
 
 %.o:%.cpp
-	@echo CXX $<
+	@echo CXX $@
 	@$(CXX) -c $(CPPFLAGS) $< -o $@
 
 clean:

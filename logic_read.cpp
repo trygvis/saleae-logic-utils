@@ -9,6 +9,8 @@
 
 using namespace std;
 
+Log log("logic_read", true);
+
 LogicInterface* logicInterface;
 int sampleRateHz = 0;
 
@@ -46,21 +48,19 @@ SampleRate allowedSampleRates[numberOfAllowedSampleRates] = {
 };
 
 void usage(char* me, char* msg) {
-    fprintf(stderr, "usage: %s -r <sample rate>\n", me);
-    fprintf(stderr, "\n");
-    fprintf(stderr, " Sample rate has to be one of\n");
+    log.error("usage: %s -r <sample rate>", me);
+    log.error("");
+    log.error(" Sample rate has to be one of");
     for(int i = 0; i < numberOfAllowedSampleRates; i++) {
-        fprintf(stderr, "  % 9d (%s)\n", allowedSampleRates[i].value, allowedSampleRates[i].text.c_str());
+        log.error("  % 9d (%s)", allowedSampleRates[i].value, allowedSampleRates[i].text.c_str());
     }
 
     if(msg) {
-        fprintf(stderr, "\n");
-        fprintf(stderr, "%s\n", msg);
+        log.error("");
+        log.error("%s", msg);
     }
     exit(EXIT_FAILURE);
 }
-
-Log log("logic_read");
 
 int main(int argc, char *argv[])
 {
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
                 sampleRateSpecified = true;
                 break;
             case '?':
-                fprintf(stderr, "woot? got '?'\n");
+                log.error("woot? got '?'");
                 usage(argv[0], NULL);
                 break;
         }
