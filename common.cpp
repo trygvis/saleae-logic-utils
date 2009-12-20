@@ -5,7 +5,9 @@
 
 using namespace std;
 
-Log::Log(const char* program) : program(program), stream(&cout) {
+extern Log log;
+
+Log::Log(const char* program) : program(program), stream(&cerr) {
 }
 
 Log::Log(const char* program, bool flip) : program(program), stream(flip ? &cout : &cerr) {
@@ -75,4 +77,82 @@ void Log::write(const char* message) {
     stream->write(message, strlen(message));
     stream->write("\n", 1);
     stream->flush();
+}
+
+// *****************************************************************************
+// SampleRate
+// *****************************************************************************
+
+static const int numberOfAllowedSampleRates = 13;
+
+static SampleRate allowedSampleRates[numberOfAllowedSampleRates] = {
+    {24000000, "24MHz"},
+    {16000000, "16MHz"},
+    {12000000, "12MHz"},
+    {8000000, "8MHz"},
+    {4000000, "4MHz"},
+    {2000000, "2MHz"},
+    {1000000, "1MHz"},
+    {500000, "500kHz"},
+    {250000, "250kHz"},
+    {200000, "200kHz"},
+    {100000, "100kHz"},
+    {50000, "50kHz"},
+    {25000, "25kHz"}
+};
+
+int SampleRate::count() {
+    return numberOfAllowedSampleRates;
+}
+
+SampleRate& SampleRate::get(int i) {
+    return allowedSampleRates[i];
+}
+
+SampleRate* SampleRate::parse(const char* str) {
+    char* end;
+    unsigned int sampleRateHz = strtol(str, &end, 10);
+
+    if(sampleRateHz == 0) {
+        return NULL;
+    }
+
+    for(int i = 0; i < count(); i++) {
+        SampleRate* s = &allowedSampleRates[i];
+        if(sampleRateHz == s->value){
+            fprintf(stderr, "found: %s\n", s->text.c_str());
+            return s;
+        }
+    }
+
+    return NULL;
+}
+
+// *****************************************************************************
+// ByteOutStream
+// *****************************************************************************
+
+/*
+ * Creates a byte stream in network order like:
+ * Header:
+ *   uint32_t: sample rate
+ *   uint32_t: reserved
+ *   uint32_t: reserved
+ *   uint32_t: reserved
+ * Body:
+ *   uint_8: byte n
+ */
+
+ByteOutStream::ByteOutStream(SampleRate* sampleRate, ostream& s) : stream(s) {
+    uint32_t value[] = {htonl(sampleRate->value), 0, 0, 0};
+    s.write((const char*)&value, 16);
+    s.flush();
+}
+
+void ByteOutStream::write(const uint8_t byte) {
+    stream.write((const char*)&byte, 1);
+}
+
+void ByteOutStream::write(uint8_t* bytes, std::streamsize size) {
+    stream.write((const char*)bytes, size);
 }

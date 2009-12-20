@@ -23,3 +23,34 @@ class Log {
         const char* program;
         std::ostream* stream;
 };
+
+class SampleRate {
+    public:
+        const uint32_t value;
+        const std::string text;
+
+        static int count();
+        static SampleRate* parse(const char* str);
+        static SampleRate& get(int i);
+};
+
+class ByteOutStream {
+    public:
+        ByteOutStream(SampleRate* sampleRate, std::ostream& stream);
+
+        void write(uint8_t byte);
+        void write(uint8_t* byte, std::streamsize size);
+
+    private:
+        std::ostream& stream;
+};
+
+class ByteInStream {
+    public:
+        ByteInStream(std::istream& stream);
+
+        uint8_t read();
+
+    private:
+        std::istream& stream;
+};

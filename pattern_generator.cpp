@@ -6,13 +6,14 @@
 uint8_t* data;
 size_t data_size;
 
-Log* log;
+Log log("pattern_generator");
+ByteOutStream* out;
 
 // TODO: generate patterns for misc protocols, i2c, rs232
 
 void alloc_data(size_t size) {
     if((data = (uint8_t*)malloc(size)) == NULL) {
-        log->error("Unable to allocate %d bytes.", size);
+        log.error("Unable to allocate %d bytes.", size);
         exit(EXIT_FAILURE);
     }
     data_size = size;
@@ -26,39 +27,55 @@ void pattern1() {
     }
 }
 
-int usage(char* me) {
-    log->error("Usage: %0 [1..1]\n", me);
+int usage(const char* me, const char* message) {
+    log.error("Usage: %0 [1..1]\n", me);
+
+    if(message != NULL) {
+        log.error(message);
+    }
+
     return EXIT_FAILURE;
 }
 
 int main(int argc, char* argv[]) {
-    int out_file = STDOUT_FILENO;
+    const char* me = argv[0];
+    char c;
+    SampleRate* sampleRate = NULL;
+    while ((c = getopt (argc, argv, "r:")) != -1) {
+        switch(c) {
+            case 'r': // Sample rate
+                sampleRate = SampleRate::parse(optarg);
+                break;
+            case '?':
+                log.error("woot? got '?'");
+                return usage(me, NULL);
+        }
+    }
+    argc -= optind;
+    argv += optind;
 
-    log = new Log(argv[0]);
-    if(argc != 2) {
-        return usage(argv[0]);
+    if(sampleRate == NULL) {
+        return usage(me, "Invalid sample rate, has to be one of the allowed values.");
     }
 
-    switch(atoi(argv[1])) {
+    if(argc != 1) {
+        return usage(me, "Exactly one pattern id has to be specified.");
+    }
+
+    switch(atoi(argv[0])) {
         case 1:
             pattern1();
             break;
         default:
-            return usage(argv[0]);
+            return usage(me, "Invalid pattern id.");
     }
 
-    log->info("Writing %d bytes", data_size);
-
-    while(data_size > 0) {
-        ssize_t bytes_written = write(out_file, data, data_size);
-
-        if(bytes_written == -1) {
-            log->perror("Error while writing out bytes");
-            return EXIT_FAILURE;
-        }
-        data_size -= bytes_written;
-    }
+    log.info("Writing %d bytes", data_size);
+    out = new ByteOutStream(sampleRate, std::cout);
+    out->write(data, data_size);
     free(data);
+
+    delete out;
 
     return EXIT_SUCCESS;
 }

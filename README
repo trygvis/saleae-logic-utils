@@ -1,0 +1,14 @@
+Collection of tools for use with Saleae's Logic logic analyzer.
+
+logic_read: Reads from the Logic with the specified sample rate
+ Output: ByteStream
+
+pattern_generator: Utility to generate byte patterns with a specified sample rate
+ Input: pattern to generate
+ Output: ByteStream
+
+logic_to_event: Tool that take a ByteStream and generate an EventStream
+ Input: ByteStream
+ Output: EventStream
+
+TODO: Use protobuf between programs

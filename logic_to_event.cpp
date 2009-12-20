@@ -13,6 +13,8 @@ int main(int argc, char* argv[]) {
     ssize_t n_read;
     while((n_read = read(in_file, buf, buf_size)) > 0) {
         log.info("Read %d bytes", n_read);
+
+
     }
 
     if(n_read == 0) {
