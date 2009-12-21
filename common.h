@@ -26,8 +26,8 @@ class Log {
 
 class SampleRate {
     public:
-        const uint32_t value;
-        const std::string text;
+        const uint32_t freq;
+        const char* text;
 
         static int count();
         static SampleRate* parse(const char* str);
@@ -38,8 +38,8 @@ class ByteOutStream {
     public:
         ByteOutStream(SampleRate* sampleRate, std::ostream& stream);
 
-        void write(uint8_t byte);
-        void write(uint8_t* byte, std::streamsize size);
+        bool write(const uint8_t byte);
+        bool write(const uint8_t* byte, std::streamsize size);
 
     private:
         std::ostream& stream;

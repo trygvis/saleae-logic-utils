@@ -1,14 +1,55 @@
+= About =
+
 Collection of tools for use with Saleae's Logic logic analyzer.
+
+These tools are expected to be chained by using a unix pipeline like this:
+
+logic_read -r 24MHz | logic_to_event | logic_wait_for_trigger -b 2 -f | logic_i2c_analyze -c 2 -d 3
+
+This pipeline would
+
+ * read from the logic with a 24MHz sample rate
+ * convert the stream of bytes to a stream of events (bit 4 went high, bit 6 went low)
+ * Wait for a specific trigger: falling edge on bit 2
+ * Run a i2c analyzer on the data, clock is bit 2, data is bit 3
+
+NOTE: This is not implemented yet, but that's the basic idea of usage.
+
+Other possible pipelines:
+
+ * Recording:
+
+   logic_read -r 24MHz -s 10M | logic_to_event > log.event
+
+ * Playback:
+
+   cat log.event | logic_to_stream | logic_write
+
+ * Pattern generation
+
+   generate_i2c .. | logic_to_stream | logic_write
+
+This would record 10 million samples, convert it to an event stream and store it
+
+= The Commands =
 
 logic_read: Reads from the Logic with the specified sample rate
  Output: ByteStream
 
 pattern_generator: Utility to generate byte patterns with a specified sample rate
- Input: pattern to generate
+ Input:  pattern to generate
  Output: ByteStream
 
 logic_to_event: Tool that take a ByteStream and generate an EventStream
- Input: ByteStream
+ Input:  ByteStream
  Output: EventStream
 
-TODO: Use protobuf between programs
+logic_to_bytes
+ Input:  EventStream
+ Output: ByteStream
+
+= TODOs =
+
+ - Use a more useful external format, either protobuf or GTKWave's format directly.
+ - Create logic_from_event to take an event stream and create a byte stream.
+ - Create logic_write to write a byte stream.

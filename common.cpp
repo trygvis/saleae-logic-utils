@@ -111,16 +111,15 @@ SampleRate& SampleRate::get(int i) {
 
 SampleRate* SampleRate::parse(const char* str) {
     char* end;
-    unsigned int sampleRateHz = strtol(str, &end, 10);
+    unsigned int freq = strtol(str, &end, 10);
 
-    if(sampleRateHz == 0) {
+    if(freq == 0) {
         return NULL;
     }
 
     for(int i = 0; i < count(); i++) {
         SampleRate* s = &allowedSampleRates[i];
-        if(sampleRateHz == s->value){
-            fprintf(stderr, "found: %s\n", s->text.c_str());
+        if(freq == s->freq){
             return s;
         }
     }
@@ -144,15 +143,18 @@ SampleRate* SampleRate::parse(const char* str) {
  */
 
 ByteOutStream::ByteOutStream(SampleRate* sampleRate, ostream& s) : stream(s) {
-    uint32_t value[] = {htonl(sampleRate->value), 0, 0, 0};
-    s.write((const char*)&value, 16);
+    uint32_t header[] = {htonl(sampleRate->freq), 0, 0, 0};
+    s.exceptions(ios::eofbit | ios::failbit | ios::badbit);
+    s.write((const char*)&header, 16);
     s.flush();
 }
 
-void ByteOutStream::write(const uint8_t byte) {
-    stream.write((const char*)&byte, 1);
+bool ByteOutStream::write(const uint8_t byte) {
+    return write(&byte, 1);
 }
 
-void ByteOutStream::write(uint8_t* bytes, std::streamsize size) {
+bool ByteOutStream::write(const uint8_t* bytes, std::streamsize size) {
     stream.write((const char*)bytes, size);
+
+    return stream.good();
 }
