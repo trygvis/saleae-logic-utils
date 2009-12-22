@@ -48,8 +48,10 @@ logic_to_bytes
  Input:  EventStream
  Output: ByteStream
 
-= TODOs =
+= Building =
 
- - Use a more useful external format, either protobuf or GTKWave's format directly.
- - Create logic_from_event to take an event stream and create a byte stream.
- - Create logic_write to write a byte stream.
+The build assumes that the Logic SDK is unpacked in the directory next to the source checkout:
+
+$ ls
+LogicSDK-2.0.4
+saleae-logic-utils

@@ -1,0 +1,3 @@
+o Use a more useful external format, either protobuf or GTKWave's format directly.
+o Create logic_from_event to take an event stream and create a byte stream.
+o Create logic_write to write a byte stream.

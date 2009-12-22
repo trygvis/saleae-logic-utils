@@ -1,7 +1,11 @@
-LOGIC_LIB = ../3rdParty/OSX/lib
-LOGIC_INCLUDE = ../3rdParty/OSX/include
+sinclude Makefile.local
 
-CFLAGS = -I$(LOGIC_INCLUDE)
+LOGIC_SDK_VERSION ?= 2.0.4
+LOGIC_SDK_HOME    ?= ../LogicSDK-$(LOGIC_SDK_VERSION)
+LOGIC_LIB         ?= $(LOGIC_SDK_HOME)/LogicConsole/3rdParty/OSX/lib
+LOGIC_INCLUDE     ?= $(LOGIC_SDK_HOME)/LogicConsole/3rdParty/OSX/include
+
+CFLAGS   = -I$(LOGIC_INCLUDE)
 CPPFLAGS = -I$(LOGIC_INCLUDE)
 
 LDFLAGS  = -L$(LOGIC_LIB)
@@ -16,23 +20,16 @@ BINS = $(addprefix bin/,logic_read logic_to_event logic_trigger pattern_generato
 
 all: $(BINS)
 
-logic_to_event.o: logic_to_event.cpp common.h
 bin/logic_to_event: logic_to_event.o common.o
-
-logic_read.o: logic_read.cpp common.h
 bin/logic_read: logic_read.o common.o
-
-logic_trigger.o: logic_trigger.cpp common.h
 bin/logic_trigger: logic_trigger.o common.o
-
 bin/pattern_generator: pattern_generator.o common.o
-
-common.o: common.cpp common.h
+$(BINS): .deps
 
 bin/%:%.o
 	@mkdir -p bin
 	@echo LD $@
-	@$(LD) $(LDFLAGS) $^ -o $@
+	@$(LD) $(LDFLAGS) $(filter-out .deps, $^) -o $@
 
 %.o:%.cpp
 	@echo CXX $@
@@ -40,3 +37,7 @@ bin/%:%.o
 
 clean:
 	rm -f $(wildcard *.o) *~ $(BINS)
+
+sinclude .deps
+.deps: $(wildcard *.cpp) $(wildcard *.h)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -MM $(wildcard *.cpp) > .deps

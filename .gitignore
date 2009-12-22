@@ -1,4 +1,5 @@
-*.swp
 *.o
-bin
 *.raw
+*.swp
+.deps
+bin
