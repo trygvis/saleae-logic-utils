@@ -2,6 +2,8 @@
 
 Collection of tools for use with Saleae's Logic logic analyzer.
 
+See also Kees' project saleae-logic-libusb on github: http://github.com/keesj/saleae-logic-libusb
+
 These tools are expected to be chained by using a unix pipeline like this:
 
 logic_read -r 24MHz | logic_to_event | logic_wait_for_trigger -b 2 -f | logic_i2c_analyze -c 2 -d 3
