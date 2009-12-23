@@ -7,6 +7,7 @@ LOGIC_LIB         ?= $(LOGIC_SDK_HOME)/LogicConsole/3rdParty/OSX/lib
 LOGIC_INCLUDE     ?= $(LOGIC_SDK_HOME)/LogicConsole/3rdParty/OSX/include
 
 CFLAGS   += -I$(LOGIC_INCLUDE)
+CFLAGS   += -Ilib
 
 LDFLAGS += -L$(LOGIC_LIB)
 LDFLAGS += -framework CoreFoundation
@@ -17,49 +18,72 @@ LDFLAGS += -lboost_unit_test_framework-mt
 LD = g++
 CC = g++
 
-BINS = $(addprefix work/bin/,logic_read logic_to_event logic_trigger pattern_generator)
+LIB_HEADERS = $(wildcard lib/*.h)
+LIB_SRC = $(wildcard lib/*.cpp)
+LIB_OBJS = $(patsubst lib/%.cpp,work/%.o,$(LIB_SRC))
 
-TEST_SRC = $(wildcard test_*.cpp)
-TEST_OBJS = $(patsubst %.cpp,%.o,$(TEST_SRC))
-TEST_RUNS = $(patsubst %.cpp,work/test/%-run,$(TEST_SRC))
-TESTS = $(patsubst %.cpp,work/test/%,$(TEST_SRC))
+BIN_SRC = $(wildcard src/*.cpp)
+BIN_OBJS = $(patsubst src/%.cpp,work/%.o,$(BIN_SRC))
+BINS = $(patsubst src/%.cpp,work/bin/%,$(BIN_SRC))
 
-all: $(TEST_RUNS) $(BINS)
+TESTS_SRC = $(wildcard tests/*.cpp)
+TESTS_OBJS = $(patsubst tests/%.cpp,work/%.o,$(TESTS_SRC))
+TESTS = $(patsubst tests/%.cpp,work/tests/%,$(TESTS_SRC))
+TESTS_RUNS = $(patsubst tests/%.cpp,work/tests/%-run,$(TESTS_SRC))
 
-work/test/%: %.o common.o
+all: $(TESTS) $(TESTS_RUNS) $(BINS)
 
-work/bin/logic_to_event: logic_to_event.o
-work/bin/logic_read: logic_read.o
-work/bin/logic_trigger: logic_trigger.o
-work/bin/pattern_generator: pattern_generator.o
+$(BINS): $(LIB_OBJS) $(LIB_HEADERS)
+#$(BINS) $(TESTS): $(LIB_OBJS)
+$(TESTS): $(filter-out work/main.o,$(LIB_OBJS)) $(LIB_HEADERS)
+#$(TESTS): $(LIB_OBJS) $(LIB_HEADERS)
+#work/tests/test_EventTime: $(filter-out work/main.o,$(LIB_OBJS))
 
-work/test/test_EventTime: test_EventTime.o
+$(LIB_SRC): $(LIB_HEADERS)
+#work/bin/%: work/%.o $(LIB_OBJS) $(LIB_HEADERS)
+#work/tests/%: $(filter-out work/main.o,$(LIB_OBJS)) $(LIB_HEADERS)
 
-$(BINS): .deps common.o main.o
-$(BINS) $(TESTS): .deps common.o
+yo:
+	@echo TESTS=$(TESTS)
+	@echo XX: $(filter-out work/main.o,$(LIB_OBJS)) $(LIB_HEADERS)
 
-$(TEST_RUNS): work/test/%-run: work/test/%
+work/tests/%-run: work/tests/%
 	$<
 	touch $@
 
-work/bin/%:%.o
+work/bin/%: work/%.o
 	@mkdir -p work/bin
 	@echo LD $@
 	@$(LD) $(LDFLAGS) $(filter %.o, $^) -o $@
 
-work/test/%:%.o
-	@mkdir -p work/test
+work/tests/%: work/%.o
+	@mkdir -p work/tests
 	@echo LD $@
 	@$(LD) $(LDFLAGS) $(filter %.o, $^) -o $@
 
-%.o:%.cpp
+# $(LIB_OBJS): 
+work/%.o: lib/%.cpp
+	@if [ ! -d work ]; then mkdir work; fi
+	@echo CXX $@
+	@$(CXX) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+# $(BIN_OBJS): 
+work/%.o: src/%.cpp
+	@if [ ! -d work ]; then mkdir work; fi
+	@echo CXX $@
+	@$(CXX) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+# $(TESTS_OBJS): 
+work/%.o: tests/%.cpp
+	@if [ ! -d work ]; then mkdir work; fi
 	@echo CXX $@
 	@$(CXX) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 clean:
-	rm -f $(wildcard *.o) *~
-	rm -rf work
+	@echo Removing work/
+	@rm -rf work $(wildcard *~)
 
 sinclude .deps
 .deps: $(wildcard *.h)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -MM $(wildcard *.cpp) > .deps
+	@echo Creating .deps
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -MM $(wildcard *.cpp) > .deps
