@@ -1,9 +1,24 @@
 # vim: noexpandtab
+
+UNAME_S=$(shell uname -s)
+
+ifeq ($(UNAME_S), Darwin)
+	PLATFORM=DARWIN
+else
+	ifeq ($(UNAME_S), Linux)
+		PLATFORM=LINUX
+	endif
+endif
+
+ifeq ($(PLATFORM),)
+	$(error Unknown platform: $(UNAME_S))
+endif
+
 sinclude Makefile.local
 
 LOGIC_SDK_VERSION ?= 2.0.4
 LOGIC_SDK_HOME    ?= ../LogicSDK-$(LOGIC_SDK_VERSION)
-ifeq ($(shell uname -a), Darwin)
+ifeq ($(PLATFORM), DARWIN)
 LOGIC_LIB         ?= $(LOGIC_SDK_HOME)/LogicConsole/3rdParty/OSX/lib
 LOGIC_INCLUDE     ?= $(LOGIC_SDK_HOME)/LogicConsole/3rdParty/OSX/include
 else
@@ -15,7 +30,7 @@ CFLAGS   += -I$(LOGIC_INCLUDE)
 CFLAGS   += -Ilib
 
 LDFLAGS += -L$(LOGIC_LIB)
-ifeq ($(shell uname -a), Darwin)
+ifeq ($(PLATFORM), DARWIN)
 LDFLAGS += -framework CoreFoundation
 LDFLAGS += -framework IOKit
 LDFLAGS += -lboost_thread-xgcc40-mt-s-1_39
@@ -45,23 +60,15 @@ all: $(TESTS) $(TESTS_RUNS) $(BINS)
 
 $(LIB_SRC): .deps
 
-$(BINS): $(LIB_OBJS) $(LIB_HEADERS)
-#$(BINS) $(TESTS): $(LIB_OBJS)
-$(TESTS): $(filter-out work/main.o,$(LIB_OBJS)) $(LIB_HEADERS)
-#$(TESTS): $(LIB_OBJS) $(LIB_HEADERS)
-#work/tests/test_EventTime: $(filter-out work/main.o,$(LIB_OBJS))
-
 $(LIB_SRC): $(LIB_HEADERS)
-#work/bin/%: work/%.o $(LIB_OBJS) $(LIB_HEADERS)
-#work/tests/%: $(filter-out work/main.o,$(LIB_OBJS)) $(LIB_HEADERS)
+$(BINS): $(LIB_OBJS) $(LIB_HEADERS)
+$(TESTS): $(filter-out work/main.o,$(LIB_OBJS)) $(LIB_HEADERS)
 
-yo:
-	@echo TESTS=$(TESTS)
-	@echo XX: $(filter-out work/main.o,$(LIB_OBJS)) $(LIB_HEADERS)
+.SECONDARY: $(TEST_OBJS)
 
 work/tests/%-run: work/tests/%
-	$<
-	touch $@
+	@$<
+	@touch $@
 
 work/bin/%: work/%.o
 	@mkdir -p work/bin
@@ -73,19 +80,16 @@ work/tests/%: work/%.o
 	@echo LD $@
 	@$(LD) $(LDFLAGS) $(filter %.o, $^) -o $@
 
-# $(LIB_OBJS): 
 work/%.o: lib/%.cpp
 	@if [ ! -d work ]; then mkdir work; fi
 	@echo CXX $@
 	@$(CXX) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-# $(BIN_OBJS): 
 work/%.o: src/%.cpp
 	@if [ ! -d work ]; then mkdir work; fi
 	@echo CXX $@
 	@$(CXX) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-# $(TESTS_OBJS): 
 work/%.o: tests/%.cpp
 	@if [ ! -d work ]; then mkdir work; fi
 	@echo CXX $@
