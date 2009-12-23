@@ -1,5 +1,6 @@
 *.o
 *.raw
 *.swp
+*.local
 .deps
-bin
+/work

@@ -1,27 +1,39 @@
 #include "common.h"
 
+using namespace std;
+using namespace Logic;
+
 Log log("to_event");
+ByteInStream* in;
+EventOutStream* out;
 
-const int buf_size = 1024;
+bool logic_parse_args(int argc, char* argv[]) {
+    return true;
+}
 
-int main(int argc, char* argv[]) {
-    char buf[buf_size];
+void logic_work() {
+    in = new ByteInStream(cin);
+    out = new EventOutStream(cout);
 
-    int in_file = STDIN_FILENO;
-    int out_file = STDOUT_FILENO;
+    log.info("Sample rate: %s", in->sampleRate()->text);
 
-    ssize_t n_read;
-    while((n_read = read(in_file, buf, buf_size)) > 0) {
-        log.info("Read %d bytes", n_read);
+    uint8_t value = in->read();
+    uint8_t last = value;
+    while(in->isOk()) {
+        if(value == last) {
+            value = in->read();
+            continue;
+        }
 
+        char buf[1000];
+        printf("change: time=%s, last=%02x, value=%02x\n", in->currentTime().to_str(buf, sizeof(buf)), last, value);
 
+        last = value;
+        value = in->read();
     }
+}
 
-    if(n_read == 0) {
-        log.debug("EOF");
-        return EXIT_SUCCESS;
-    }
-
-    log.error("Error while reading.");
-    return EXIT_FAILURE;
+void logic_close() {
+    delete in;
+    delete out;
 }

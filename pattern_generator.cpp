@@ -3,6 +3,8 @@
 #include <sys/types.h>
 #include "common.h"
 
+using namespace Logic;
+
 uint8_t* data;
 size_t data_size;
 
@@ -20,27 +22,41 @@ void alloc_data(size_t size) {
 }
 
 void pattern1() {
-    alloc_data(10);
-    for(int i = 0; i < 10; i+=2) {
-        data[i] = 0x00;
-        data[i + 1] = 0x01;
+    int size = 256;
+    alloc_data(size);
+    for(int i = 0; i < size; i++) {
+        data[i] = i;
     }
 }
 
-int usage(const char* me, const char* message) {
-    log.error("Usage: %0 [1..1]\n", me);
+const char* me = "pattern_generator";
+
+const char* pattern_descriptions[] = {
+    "Sequence of bytes from 0 to 255",
+};
+
+bool usage(const char* message) {
+    int i;
+
+    log.error("Usage: %s -r <sample rate> [1..%d]", me, sizeof(pattern_descriptions));
+    log.error(" Patterns:", me);
+    for(i = 0; i < sizeof(pattern_descriptions); i++) {
+        log.error("  %d: %s", i, pattern_descriptions[i]);
+    }
 
     if(message != NULL) {
         log.error(message);
     }
 
-    return EXIT_FAILURE;
+    return false;
 }
 
-int main(int argc, char* argv[]) {
+const SampleRate* sampleRate = NULL;
+int pattern;
+
+bool logic_parse_args(int argc, char* argv[]) {
     const char* me = argv[0];
     char c;
-    SampleRate* sampleRate = NULL;
     while ((c = getopt (argc, argv, "r:")) != -1) {
         switch(c) {
             case 'r': // Sample rate
@@ -48,34 +64,38 @@ int main(int argc, char* argv[]) {
                 break;
             case '?':
                 log.error("woot? got '?'");
-                return usage(me, NULL);
+                return usage(NULL);
         }
     }
     argc -= optind;
     argv += optind;
 
     if(sampleRate == NULL) {
-        return usage(me, "Invalid sample rate, has to be one of the allowed values.");
+        return usage("Invalid sample rate, has to be one of the allowed values.");
     }
 
     if(argc != 1) {
-        return usage(me, "Exactly one pattern id has to be specified.");
+        return usage("Exactly one pattern id has to be specified.");
     }
 
-    switch(atoi(argv[0])) {
+    pattern = atoi(argv[0]);
+
+    return true;
+}
+
+void logic_work() {
+    switch(pattern) {
         case 1:
             pattern1();
             break;
-        default:
-            return usage(me, "Invalid pattern id.");
     }
 
     log.info("Writing %d bytes", data_size);
     out = new ByteOutStream(sampleRate, std::cout);
     out->write(data, data_size);
     free(data);
+}
 
+void logic_close() {
     delete out;
-
-    return EXIT_SUCCESS;
 }

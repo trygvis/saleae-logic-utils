@@ -53,7 +53,9 @@ Trigger TRIGGER_FALLING = Trigger("falling");
 
 Trigger* trigger = NULL;
 
-void usage(char* me, char* msg) {
+const char *me = "logic_trigger";
+
+void usage(char* msg) {
     fprintf(stderr, "usage: %s [-t <trigger>] [-b <bit>]\n", me);
     fprintf(stderr, "\n");
     fprintf(stderr, " Sample rate can be one of: \n");
@@ -85,80 +87,28 @@ void usage(char* me, char* msg) {
     exit(EXIT_FAILURE);
 }
 
-int main(int argc, char *argv[])
-{
+bool logic_parse_args(int argc, char *argv[]) {
     char c;
     while ((c = getopt (argc, argv, "t:r:b")) != -1) {
         switch(c) {
             case 'r': // Sample rate
                 sampleRateHz = atoi(optarg);
-                break;
+                return true;
             case 't':   // trigger
                 // "falling", "rising", "high", "low"
-                break;
+                return true;
             case 'b':   // trigger bit
-                break;
+                return true;
+            default:
+                usage(NULL);
+                return false;
         }
     }
-
-    cout << "Sample rate: " << sampleRateHz << endl;
-
-	sampleRateHz = 16000000; //Valid speeds (Hz) are: 24000000, 16000000, 12000000, 8000000, 4000000, 2000000, 1000000, 500000, 250000, 200000, 100000, 50000, 25000
-
-	//Register for our callbacks.
-	gLogicInterface.RegisterOnConnect( OnConnect, 0 );
-	gLogicInterface.RegisterOnDisconnect( OnDisconnect, 0 );
-	gLogicInterface.RegisterOnReadData( OnReadData, 0 );
-//	gLogicInterface.RegisterOnWriteData( OnWriteData, 0 );
-	gLogicInterface.RegisterOnError( OnError, 0 );
-
-	//Logistd::cinterface will start trying to find Logic and send us callbacks.
-	gLogicInterface.BeginConnect();
-
-    cout << "Waiting for connection..." << endl;
-
-    pthread_mutex_lock(&condition_mutex);
-    pthread_cond_wait(&condition_cond, &condition_mutex);
-    pthread_mutex_unlock(&condition_mutex);
-
-    cout << "Connected! Logic id=" << logicId << endl;
-
-    gLogicInterface.ReadStart( logicId );
-
-    sleep(10);
-
-	return 0;
 }
 
-void OnConnect(unsigned int logic_id, void* user_data)
+void logic_work()
 {
-	//note that you could use user_data to pass the 'this' pointer to a static member of a class;  user_data is set when registering the callbacks.
-	gLogicIds.push_back( logic_id );
-	cout << "Logic Connected! (id=" << logic_id << ")" << endl;
-	gLogicInterface.SetSampleRateHz( logic_id, sampleRateHz );
-
-    logicId = logic_id;
-
-    pthread_mutex_lock(&condition_mutex);
-    pthread_cond_signal(&condition_cond);
-    pthread_mutex_unlock(&condition_mutex);
 }
 
-void OnDisconnect(unsigned int logic_id, void* user_data)
-{
-	cout << "Logic Disconnected! (id=" << logic_id << ")" << endl;
+void logic_close() {
 }
-
-void OnReadData( unsigned int logic_id, unsigned char* data, unsigned int data_length, void* user_data )
-{
-	cout << "Got " << data_length << " bytes, starting with 0x" << hex << (int)*data << dec << endl;
-
-	delete[] data;
-}
-
-void OnError(unsigned int logic_id, void* user_data)
-{
-	//Logic reports an error if something fails while reading or writing.  Usually it means that it couldn't keep up with the requested data rate, or Logic was disconnected.
-	cout << "Logic Reported an Error!" << endl;
-}
-

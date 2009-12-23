@@ -8,11 +8,12 @@
 #include <unistd.h>
 
 using namespace std;
+using namespace Logic;
 
 Log log("logic_read", true);
-LogicInterface* logicInterface;
-SampleRate* sampleRate = NULL;
-ByteOutStream* out;
+LogicInterface* logicInterface = NULL;
+const SampleRate* sampleRate = NULL;
+ByteOutStream* out = NULL;
 
 void OnConnect(unsigned int logic_id, void* user_data);
 void OnDisconnect(unsigned int logic_id, void* user_data);
@@ -31,7 +32,7 @@ int usage(char* me, char* msg) {
     log.error("");
     log.error(" Sample rate has to be one of");
     for(int i = 0; i < SampleRate::count(); i++) {
-        log.error("  % 9d (%s)", SampleRate::get(i).freq, SampleRate::get(i).text);
+        log.error("  % 9d (%s)", SampleRate::getAvailableSampleRate(i)->freq, SampleRate::getAvailableSampleRate(i)->text);
     }
 
     if(msg) {
@@ -41,7 +42,27 @@ int usage(char* me, char* msg) {
     return EXIT_FAILURE;
 }
 
-void work() {
+bool logic_parse_args(int argc, char* argv[]) {
+    char c;
+    while ((c = getopt (argc, argv, "r:")) != -1) {
+        switch(c) {
+            case 'r': // Sample rate
+                sampleRate = SampleRate::parse(optarg);
+                break;
+            case '?':
+                log.error("woot? got '?'");
+                return usage(argv[0], NULL);
+        }
+    }
+
+    if(sampleRate == NULL) {
+        return usage(argv[0], "Invalid sample rate, has to be one of the allowed values.");
+    }
+
+    log.info("Sample rate: %s", sampleRate->text);
+}
+
+void logic_work() {
     out = new ByteOutStream(sampleRate, cerr);
 
     log.info("Connecting to Logic...");
@@ -71,40 +92,9 @@ void work() {
     log.info("Shut down", logicId);
 }
 
-int main(int argc, char *argv[])
-{
-    char c;
-    while ((c = getopt (argc, argv, "r:")) != -1) {
-        switch(c) {
-            case 'r': // Sample rate
-                sampleRate = SampleRate::parse(optarg);
-                break;
-            case '?':
-                log.error("woot? got '?'");
-                return usage(argv[0], NULL);
-        }
-    }
-
-    if(sampleRate == NULL) {
-        return usage(argv[0], "Invalid sample rate, has to be one of the allowed values.");
-    }
-
-    log.info("Sample rate: %s", sampleRate->text);
-
-    try {
-        work();
-    }
-    catch(exception& e) {
-        log.error("Uncaught exception: %s", e.what());
-    }
-    catch(...) {
-        log.error("Unknown uncaught exception.");
-    }
-
-    // TODO: Clean up on failure
-    delete logicInterface;
+void logic_close() {
     delete out;
-    return EXIT_SUCCESS;
+    delete logicInterface;
 }
 
 void OnConnect(unsigned int logic_id, void* user_data)
