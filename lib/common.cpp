@@ -1,7 +1,12 @@
 #include "common.h"
 
-#include <iostream>
+#include <arpa/inet.h>
 #include <errno.h>
+#include <iostream>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 using namespace std;
 using namespace Logic;
